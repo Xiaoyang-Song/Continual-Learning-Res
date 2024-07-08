@@ -195,26 +195,29 @@ print(Counter(temp_resp_test))
 
 n_ood_reserved = 2000
 n_ood_test = 8000
-ood_img_train = img_predictor_defect[4, 0:n_ood_reserved, :, :]
-ood_resp_train = img_response_defect[4, 0:n_ood_reserved]
-ood_img_test = img_predictor_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test), :, :]
-ood_resp_test = img_response_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test)]
+ood_img_train = torch.tensor(img_predictor_defect[4, 0:n_ood_reserved, :, :])
+ood_resp_train = torch.tensor(img_response_defect[4, 0:n_ood_reserved])
+ood_img_test = torch.tensor(img_predictor_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test), :, :])
+ood_resp_test = torch.tensor(img_response_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test)])
 
 print(ood_img_train.shape)
 print(ood_resp_train.shape)
 print(ood_img_test.shape)
 print(ood_resp_test.shape)
-print(Counter(ood_resp_train))
-print(Counter(ood_resp_test))
+# print(Counter(ood_resp_train))
+# print(Counter(ood_resp_test))
 
 # Save InD and OOD data
 ind_path = os.path.join('..', 'Out-of-Distribution-GANs', 'Datasets', '3DPC')
 os.makedirs(ind_path, exist_ok=True)
-# torch.save(zip(temp_img_train, temp_resp_train), os.path.join(ind_path, 'ind-train.pt'))
+print('start saving')
+# ind_train = list(zip(torch.tensor(temp_img_train), torch.tensor(temp_resp_train)))
+# torch.save(ind_train, os.path.join(ind_path, 'ind-train.pt'))
 # print('Saved')
-# torch.save(zip(temp_img_test, temp_resp_test), os.path.join(ind_path, 'ind-test.pt'))
+# ind_test = list(zip(torch.tensor(temp_img_test), torch.tensor(temp_resp_test)))
+# torch.save(ind_test, os.path.join(ind_path, 'ind-test.pt'))
 # print('Saved')
-torch.save(zip(ood_img_train, ood_resp_train), os.path.join(ind_path, 'ood-train.pt'))
+torch.save(list(zip(ood_img_train, ood_resp_train)), os.path.join(ind_path, 'ood-train.pt'))
 print('Saved')
-torch.save(zip(ood_img_test, ood_resp_test), os.path.join(ind_path, 'ood-test.pt'))
+torch.save(list(zip(ood_img_test, ood_resp_test)), os.path.join(ind_path, 'ood-test.pt'))
 print('Saved')
