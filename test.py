@@ -195,10 +195,10 @@ print(Counter(temp_resp_test))
 
 n_ood_reserved = 2000
 n_ood_test = 8000
-ood_img_train = torch.tensor(img_predictor_defect[4, 0:n_ood_reserved, :, :])
-ood_resp_train = torch.tensor(img_response_defect[4, 0:n_ood_reserved])
-ood_img_test = torch.tensor(img_predictor_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test), :, :])
-ood_resp_test = torch.tensor(img_response_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test)])
+ood_img_train = torch.tensor(img_predictor_defect[4, 0:n_ood_reserved, :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_train = torch.tensor(img_response_defect[4, 0:n_ood_reserved], dtype=torch.float32)
+ood_img_test = torch.tensor(img_predictor_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test), :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_test = torch.tensor(img_response_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test)], dtype=torch.float32)
 
 print(ood_img_train.shape)
 print(ood_resp_train.shape)
@@ -211,13 +211,72 @@ print(ood_resp_test.shape)
 ind_path = os.path.join('..', 'Out-of-Distribution-GANs', 'Datasets', '3DPC')
 os.makedirs(ind_path, exist_ok=True)
 print('start saving')
-# ind_train = list(zip(torch.tensor(temp_img_train), torch.tensor(temp_resp_train)))
-# torch.save(ind_train, os.path.join(ind_path, 'ind-train.pt'))
-# print('Saved')
-# ind_test = list(zip(torch.tensor(temp_img_test), torch.tensor(temp_resp_test)))
-# torch.save(ind_test, os.path.join(ind_path, 'ind-test.pt'))
-# print('Saved')
+ind_train = list(zip(torch.tensor(temp_img_train, dtype=torch.float32).unsqueeze(1), torch.tensor(temp_resp_train)))
+torch.save(ind_train, os.path.join(ind_path, 'ind-train.pt'))
+print('Saved')
+ind_test = list(zip(torch.tensor(temp_img_test, dtype=torch.float32).unsqueeze(1), torch.tensor(temp_resp_test)))
+torch.save(ind_test, os.path.join(ind_path, 'ind-test.pt'))
+print('Saved')
 torch.save(list(zip(ood_img_train, ood_resp_train)), os.path.join(ind_path, 'ood-train.pt'))
 print('Saved')
 torch.save(list(zip(ood_img_test, ood_resp_test)), os.path.join(ind_path, 'ood-test.pt'))
 print('Saved')
+
+
+# Test
+ind_train = torch.load(os.path.join('..', 'Out-of-Distribution-GANs', 'Datasets', '3DPC', 'ind-train.pt'))
+ind_val = torch.load(os.path.join('..', 'Out-of-Distribution-GANs', 'Datasets', '3DPC', 'ind-test.pt'))
+print(len(ind_train))
+
+print(ind_train[0][0].shape)
+ldr = torch.utils.data.DataLoader(ind_train, 32, True)
+class PCDiscriminator(nn.Module):
+    def __init__(self):
+        super(PCDiscriminator, self).__init__()
+        self.conv1 = nn.Conv2d(1, 6, 3, padding = (0, 20))
+        self.pool = nn.MaxPool2d(3, 3)
+        self.conv2 = nn.Conv2d(6, 16, 3)
+        self.fc1 = nn.Linear(16 * 32 * 3, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 5)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 32 * 3)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+    
+class PCGenerator(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = nn.Linear(32, 64)
+        self.fc2 = nn.Linear(64, 128)
+        self.fc3 = nn.Linear(128, 256)
+        self.fc4 = nn.Linear(256, 900)
+        self.gate = nn.Tanh()
+
+    def forward(self, x):
+        out = x.squeeze()
+        out = F.relu(self.fc1(out))
+        out = F.relu(self.fc2(out))
+        out = F.relu(self.fc3(out))
+        out = self.gate(self.fc4(out).reshape(-1, 1, 300, 3))
+        return out
+
+
+model = PCDiscriminator()
+gmodel = PCGenerator()
+for x, y in ldr:
+    print(x.shape)
+    # x = x.to(dtype=torch.float32)
+    # print(Counter(y))
+    # out = model(x.unsqueeze(1))
+    out = model(x)
+    print(out.shape)
+    seed = torch.ones((10, 32, 1, 1))
+    out = gmodel(seed)
+    print(out.shape)
+    break

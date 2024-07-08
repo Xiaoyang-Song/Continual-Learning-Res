@@ -252,6 +252,8 @@ class Net(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+    
+a = 5
 
 #from architecture_res_pt import ResNet
 
