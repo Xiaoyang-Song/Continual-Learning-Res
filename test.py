@@ -21,6 +21,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import confusion_matrix
 from collections import Counter
 from copy import deepcopy
+from tqdm import tqdm
 
 # import pptk
 
@@ -96,7 +97,7 @@ search_range = 5000
 img_predictor_defect = np.zeros((n_defect, n_img_defect, size_img, 3)) # store the image predictors
 img_response_defect = np.zeros((n_defect, n_img_defect))
 img_center_defect = np.zeros((n_defect, n_img_defect, 3))
-for defect_type in range(n_defect):
+for defect_type in tqdm(range(n_defect)):
     # find defect centers
     boolRow = indat_defect_raw[:, 3] == (defect_type + 1)
     i = 0
@@ -193,20 +194,6 @@ print(temp_resp_test.shape)
 print(Counter(temp_resp_train))
 print(Counter(temp_resp_test))
 
-n_ood_reserved = 2000
-n_ood_test = 8000
-ood_img_train = torch.tensor(img_predictor_defect[4, 0:n_ood_reserved, :, :], dtype=torch.float32).unsqueeze(1)
-ood_resp_train = torch.tensor(img_response_defect[4, 0:n_ood_reserved], dtype=torch.float32)
-ood_img_test = torch.tensor(img_predictor_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test), :, :], dtype=torch.float32).unsqueeze(1)
-ood_resp_test = torch.tensor(img_response_defect[4, n_ood_reserved:(n_ood_reserved +n_ood_test)], dtype=torch.float32)
-
-print(ood_img_train.shape)
-print(ood_resp_train.shape)
-print(ood_img_test.shape)
-print(ood_resp_test.shape)
-# print(Counter(ood_resp_train))
-# print(Counter(ood_resp_test))
-
 # Save InD and OOD data
 ind_path = os.path.join('..', 'Out-of-Distribution-GANs', 'Datasets', '3DPC')
 os.makedirs(ind_path, exist_ok=True)
@@ -217,6 +204,21 @@ print('Saved')
 ind_test = list(zip(torch.tensor(temp_img_test, dtype=torch.float32).unsqueeze(1), torch.tensor(temp_resp_test)))
 torch.save(ind_test, os.path.join(ind_path, 'ind-test.pt'))
 print('Saved')
+
+n_ood_reserved = 2000
+n_ood_test = 8000
+ood_img_train = torch.tensor(img_predictor_defect[4, 0:n_ood_reserved, :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_train = torch.tensor(img_response_defect[4, 0:n_ood_reserved], dtype=torch.float32)
+ood_img_test = torch.tensor(img_predictor_defect[4, n_ood_reserved:(n_ood_reserved + n_ood_test), :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_test = torch.tensor(img_response_defect[4, n_ood_reserved:(n_ood_reserved + n_ood_test)], dtype=torch.float32)
+
+print(ood_img_train.shape)
+print(ood_resp_train.shape)
+print(ood_img_test.shape)
+print(ood_resp_test.shape)
+print(Counter(ood_resp_train))
+print(Counter(ood_resp_test))
+
 torch.save(list(zip(ood_img_train, ood_resp_train)), os.path.join(ind_path, 'ood-train.pt'))
 print('Saved')
 torch.save(list(zip(ood_img_test, ood_resp_test)), os.path.join(ind_path, 'ood-test.pt'))
