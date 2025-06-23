@@ -169,7 +169,7 @@ ntest = 2000
 
 # task lists
 # 1 small dent, 2 corner crack, 3 big dent, 4 wood grain, 5 long crack
-task_init = np.array([0, 1, 3])
+task_init = np.array([0, 2, 3]) # small dent, big dent, wood grain
 
 train_data = {}
 test_data = {}
@@ -195,6 +195,8 @@ print(temp_resp_test.shape)
 print(Counter(temp_resp_train))
 print(Counter(temp_resp_test))
 print("Processed InD dataset class distributions:")
+temp_resp_train[temp_resp_train == 3] = 2
+temp_resp_test[temp_resp_test == 3] = 2
 temp_resp_train[temp_resp_train == 4] = 3
 temp_resp_test[temp_resp_test == 4] = 3
 print(Counter(temp_resp_train))
@@ -229,10 +231,10 @@ n_ood_reserved = 2000
 n_ood_test = 8000
 
 # OOD Corner Crack
-ood_img_train_0 = torch.tensor(img_predictor_defect[2, 0:n_ood_reserved, :, :], dtype=torch.float32).unsqueeze(1)
-ood_resp_train_0 = torch.tensor(img_response_defect[2, 0:n_ood_reserved], dtype=torch.int64)
-ood_img_test_0 = torch.tensor(img_predictor_defect[2, n_ood_reserved:(n_ood_reserved + n_ood_test), :, :], dtype=torch.float32).unsqueeze(1)
-ood_resp_test_0 = torch.tensor(img_response_defect[2, n_ood_reserved:(n_ood_reserved + n_ood_test)], dtype=torch.int64)
+ood_img_train_0 = torch.tensor(img_predictor_defect[1, 0:n_ood_reserved, :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_train_0 = torch.tensor(img_response_defect[1, 0:n_ood_reserved], dtype=torch.int64)
+ood_img_test_0 = torch.tensor(img_predictor_defect[1, n_ood_reserved:(n_ood_reserved + n_ood_test), :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_test_0 = torch.tensor(img_response_defect[1, n_ood_reserved:(n_ood_reserved + n_ood_test)], dtype=torch.int64)
 print("Corner Crack OOD data prepared; shape as follows:")
 print(ood_img_train_0.shape)
 print(ood_resp_train_0.shape)
