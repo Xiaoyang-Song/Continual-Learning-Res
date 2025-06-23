@@ -169,14 +169,14 @@ ntest = 2000
 
 # task lists
 # 1 small dent, 2 corner crack, 3 big dent, 4 wood grain, 5 long crack
-task_init = np.array([0, 1, 2, 3])
+task_init = np.array([0, 1, 3])
 
 train_data = {}
 test_data = {}
 multitask_train_loader = {}
 multitask_test_loader = {}
 
-# baseline dataset
+# baseline dataset (InD)
 temp_img_train = img_predictor_normal[0:ntrain, :, :]
 temp_resp_train = img_response_normal[0:ntrain]
 temp_img_test = img_predictor_normal[ntrain:(ntrain+ntest), :, :]
@@ -187,48 +187,87 @@ for i in task_init:
     temp_img_test = np.vstack((temp_img_test, img_predictor_defect[i, ntrain:(ntrain+ntest), :, :]))
     temp_resp_test = np.append(temp_resp_test, img_response_defect[i, ntrain:(ntrain+ntest)])
 
+print("InD dataset prepared; shape as follows:")
 print(temp_img_train.shape)
 print(temp_img_test.shape)
 print(temp_resp_train.shape)
 print(temp_resp_test.shape)
 print(Counter(temp_resp_train))
 print(Counter(temp_resp_test))
+print("Processed InD dataset class distributions:")
+temp_resp_train[temp_resp_train == 4] = 3
+temp_resp_test[temp_resp_test == 4] = 3
+print(Counter(temp_resp_train))
+print(Counter(temp_resp_test))
+
+# def relabel_tuples(dsets, ori, target):
+#     transformation = dict(zip(ori, target))
+#     transformed = []
+#     for dpts in tqdm(dsets):
+#         transformed.append((dpts[0], transformation[dpts[1]]))
+#     return transformed
 
 # Save InD and OOD data
 ind_path = os.path.join('..', 'Out-of-Distribution-GANs', 'Datasets', '3DPC')
 os.makedirs(ind_path, exist_ok=True)
 print('start saving')
-ind_train = list(zip(torch.tensor(temp_img_train, dtype=torch.float32).unsqueeze(1), torch.tensor(temp_resp_train)))
+ind_train = list(zip(torch.tensor(temp_img_train, dtype=torch.float32).unsqueeze(1), torch.tensor(temp_resp_train, dtype=torch.int64)))
+# print(f"Raw Class Distribution: {Counter(list(zip(*ind_train))[1])}")
+# ind_train = relabel_tuples(ind_train, [0, 1, 2, 4], [0, 1, 2, 3])  # relabeling to match the task order
+# print(f"Processed Class Distribution: {Counter(list(zip(*ind_train))[1])}")
 torch.save(ind_train, os.path.join(ind_path, 'ind-train.pt'))
-print('Saved')
-ind_test = list(zip(torch.tensor(temp_img_test, dtype=torch.float32).unsqueeze(1), torch.tensor(temp_resp_test)))
+print('InD Training Data Saved')
+
+ind_test = list(zip(torch.tensor(temp_img_test, dtype=torch.float32).unsqueeze(1), torch.tensor(temp_resp_test, dtype=torch.int64)))
+# print(f"Raw Class Distribution: {Counter(list(zip(*ind_test))[1])}")
+# ind_test = relabel_tuples(ind_test, [0, 1, 2, 4], [0, 1, 2, 3])  # relabeling to match the task order
+# print(f"Processed Class Distribution: {Counter(list(zip(*ind_test))[1])}")
 torch.save(ind_test, os.path.join(ind_path, 'ind-test.pt'))
-print('Saved')
+print('InD Testing Data Saved')
 
 n_ood_reserved = 2000
 n_ood_test = 8000
-ood_img_train = torch.tensor(img_predictor_defect[4, 0:n_ood_reserved, :, :], dtype=torch.float32).unsqueeze(1)
-ood_resp_train = torch.tensor(img_response_defect[4, 0:n_ood_reserved], dtype=torch.float32)
-ood_img_test = torch.tensor(img_predictor_defect[4, n_ood_reserved:(n_ood_reserved + n_ood_test), :, :], dtype=torch.float32).unsqueeze(1)
-ood_resp_test = torch.tensor(img_response_defect[4, n_ood_reserved:(n_ood_reserved + n_ood_test)], dtype=torch.float32)
 
-print(ood_img_train.shape)
-print(ood_resp_train.shape)
-print(ood_img_test.shape)
-print(ood_resp_test.shape)
-print(Counter(ood_resp_train))
-print(Counter(ood_resp_test))
+# OOD Corner Crack
+ood_img_train_0 = torch.tensor(img_predictor_defect[2, 0:n_ood_reserved, :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_train_0 = torch.tensor(img_response_defect[2, 0:n_ood_reserved], dtype=torch.int64)
+ood_img_test_0 = torch.tensor(img_predictor_defect[2, n_ood_reserved:(n_ood_reserved + n_ood_test), :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_test_0 = torch.tensor(img_response_defect[2, n_ood_reserved:(n_ood_reserved + n_ood_test)], dtype=torch.int64)
+print("Corner Crack OOD data prepared; shape as follows:")
+print(ood_img_train_0.shape)
+print(ood_resp_train_0.shape)
+print(ood_img_test_0.shape)
+print(ood_resp_test_0.shape)
+print(Counter(np.array(ood_resp_train_0)))
+print(Counter(np.array(ood_resp_test_0)))
 
-torch.save(list(zip(ood_img_train, ood_resp_train)), os.path.join(ind_path, 'ood-train.pt'))
-print('Saved')
-torch.save(list(zip(ood_img_test, ood_resp_test)), os.path.join(ind_path, 'ood-test.pt'))
-print('Saved')
+# OOD Long Crack
+ood_img_train_1 = torch.tensor(img_predictor_defect[4, 0:n_ood_reserved, :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_train_1 = torch.tensor(img_response_defect[4, 0:n_ood_reserved], dtype=torch.int64)
+ood_img_test_1 = torch.tensor(img_predictor_defect[4, n_ood_reserved:(n_ood_reserved + n_ood_test), :, :], dtype=torch.float32).unsqueeze(1)
+ood_resp_test_1 = torch.tensor(img_response_defect[4, n_ood_reserved:(n_ood_reserved + n_ood_test)], dtype=torch.int64)
+print("Long Crack OOD data prepared; shape as follows:")
+print(ood_img_train_1.shape)
+print(ood_resp_train_1.shape)
+print(ood_img_test_1.shape)
+print(ood_resp_test_1.shape)
+print(Counter(np.array(ood_resp_train_1)))
+print(Counter(np.array(ood_resp_test_1)))
+
+torch.save(list(zip(ood_img_train_0, ood_resp_train_0)), os.path.join(ind_path, 'ood-train-corner-crack.pt'))
+torch.save(list(zip(ood_img_train_1, ood_resp_train_1)), os.path.join(ind_path, 'ood-train-long-crack.pt'))
+print('Corner Crack OOD Saved')
+torch.save(list(zip(ood_img_test_0, ood_resp_test_0)), os.path.join(ind_path, 'ood-test-corner-crack.pt'))
+torch.save(list(zip(ood_img_test_1, ood_resp_test_1)), os.path.join(ind_path, 'ood-test-long-crack.pt'))
+print('Long Crack OOD Saved')
+torch.save(list(zip(ood_img_test_0, ood_resp_test_0)) + list(zip(ood_img_test_1, ood_resp_test_1)), os.path.join(ind_path, 'ood-test.pt'))
+print('OOD Testing Data Saved')
 
 
 # Test
 ind_train = torch.load(os.path.join('..', 'Out-of-Distribution-GANs', 'Datasets', '3DPC', 'ind-train.pt'))
 ind_val = torch.load(os.path.join('..', 'Out-of-Distribution-GANs', 'Datasets', '3DPC', 'ind-test.pt'))
-print(len(ind_train))
+# print(len(ind_train))
 
 print(ind_train[0][0].shape)
 ldr = torch.utils.data.DataLoader(ind_train, 32, True)
